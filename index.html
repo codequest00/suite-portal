@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SuiteService | Portal de Acompanhamento (Ao Vivo)</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background-color: #f4f7fc; color: #1e293b; line-height: 1.5; padding: 24px; }
+        .portal-container { max-width: 1600px; margin: 0 auto; }
+        .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; flex-wrap: wrap; gap: 16px; }
+        .header-left { display: flex; align-items: center; gap: 12px; }
+        .logo { background-color: #0a3d62; color: white; font-weight: 700; font-size: 22px; padding: 8px 16px; border-radius: 40px; letter-spacing: -0.5px; box-shadow: 0 4px 8px rgba(10,61,98,0.1); }
+        .header h1 { font-weight: 600; font-size: 26px; color: #0a3d62; }
+        .status-badge { background: #e8f0fe; color: #0a3d62; padding: 8px 20px; border-radius: 40px; font-weight: 500; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+        .live-dot { width: 10px; height: 10px; background-color: #10b981; border-radius: 50%; display: inline-block; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+        .tabs-container { margin-bottom: 24px; border-bottom: 1px solid #e2e8f0; }
+        .tabs { display: flex; gap: 8px; }
+        .tab { padding: 12px 24px; background: transparent; border: none; font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 500; color: #64748b; cursor: pointer; border-radius: 40px 40px 0 0; transition: all 0.2s; }
+        .tab:hover { color: #0a3d62; background: #e9eef3; }
+        .tab.active { background: white; color: #0a3d62; font-weight: 600; box-shadow: 0 -2px 8px rgba(0,0,0,0.02); }
+        .tab-content { display: none; background: transparent; }
+        .tab-content.active { display: block; }
+        .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 28px; }
+        .summary-card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.02); border: 1px solid #e9eef3; }
+        .summary-label { font-size: 14px; font-weight: 500; color: #64748b; margin-bottom: 8px; }
+        .summary-value { font-size: 36px; font-weight: 700; color: #0a3d62; line-height: 1.2; }
+        .summary-unit { font-size: 16px; font-weight: 400; color: #64748b; margin-left: 4px; }
+        .tracking-section { display: grid; grid-template-columns: 1fr 1.2fr; gap: 24px; margin-bottom: 24px; }
+        .map-panel { background: white; border-radius: 24px; padding: 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.02); border: 1px solid #e9eef3; }
+        .map-panel h3 { font-size: 16px; font-weight: 600; margin-bottom: 12px; color: #0a3d62; }
+        #mini-map { height: 260px; width: 100%; border-radius: 16px; background: #d4e2f0; z-index: 1; }
+        .trip-progress { margin-top: 16px; padding-top: 12px; border-top: 1px solid #edf2f7; }
+        .progress-label { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 6px; }
+        .progress-bar-bg { background: #e2e8f0; height: 8px; border-radius: 20px; overflow: hidden; }
+        .progress-bar-fill { background: #0a3d62; height: 100%; border-radius: 20px; width: 0%; }
+        .table-panel { background: white; border-radius: 24px; padding: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.02); border: 1px solid #e9eef3; overflow-x: auto; }
+        .table-panel h3 { font-size: 16px; font-weight: 600; margin-bottom: 16px; color: #0a3d62; }
+        .os-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .os-table th { text-align: left; padding: 12px 8px; color: #64748b; font-weight: 500; border-bottom: 1px solid #e2e8f0; }
+        .os-table td { padding: 14px 8px; border-bottom: 1px solid #edf2f7; }
+        .status { display: inline-block; padding: 4px 10px; border-radius: 40px; font-size: 12px; font-weight: 500; }
+        .status.completed { background: #d1fae5; color: #065f46; }
+        .status.ongoing { background: #fef3c7; color: #92400e; }
+        .status.pending { background: #e0f2fe; color: #0369a1; }
+        .chart-placeholder { background: white; border-radius: 24px; padding: 30px; box-shadow: 0 8px 20px rgba(0,0,0,0.02); border: 1px solid #e9eef3; text-align: center; color: #64748b; }
+        .bar-chart { display: flex; justify-content: space-around; align-items: flex-end; height: 200px; margin-top: 30px; }
+        .bar-item { display: flex; flex-direction: column; align-items: center; width: 60px; }
+        .bar { width: 40px; background: #0a3d62; border-radius: 8px 8px 0 0; margin-bottom: 8px; }
+        @media (max-width: 1000px) {
+            .tracking-section { grid-template-columns: 1fr; }
+            .summary-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="portal-container">
+    <div class="header">
+        <div class="header-left">
+            <div class="logo">SuiteService</div>
+            <h1>Portal de Acompanhamento · Dados Reais</h1>
+        </div>
+        <div class="status-badge">
+            <span class="live-dot"></span>
+            <span id="status-text">Conectando à API...</span>
+        </div>
+    </div>
+
+    <div class="tabs-container">
+        <div class="tabs">
+            <button class="tab active" data-tab="daily">📅 Diário</button>
+            <button class="tab" data-tab="weekly">📆 Semanal</button>
+            <button class="tab" data-tab="monthly">📊 Mensal</button>
+            <button class="tab" data-tab="yearly">📈 Anual</button>
+        </div>
+    </div>
+
+    <div id="daily" class="tab-content active">
+        <div class="summary-grid">
+            <div class="summary-card">
+                <div class="summary-label">Total de OS Hoje</div>
+                <div class="summary-value" id="total-os">--</div>
+                <div style="font-size:13px; color:#64748b; margin-top:4px;" id="os-breakdown">--</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-label">Distância Total</div>
+                <div class="summary-value" id="distancia-total">--</div>
+                <div style="font-size:13px; color:#64748b; margin-top:4px;">Otimizada pelo motor</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-label">Tempo Total (viagem+exec.)</div>
+                <div class="summary-value" id="tempo-total">--</div>
+                <div style="font-size:13px; color:#64748b; margin-top:4px;">Jornada estimada</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-label">Previsão de Retorno</div>
+                <div class="summary-value" id="horario-retorno">--</div>
+                <div style="font-size:13px; color:#64748b; margin-top:4px;">À base</div>
+            </div>
+        </div>
+
+        <div class="tracking-section">
+            <div class="map-panel">
+                <h3>📍 Rota do Dia (Otimizada)</h3>
+                <div id="mini-map"></div>
+                <div class="trip-progress">
+                    <div class="progress-label">
+                        <span>Progresso da rota</span>
+                        <span id="progress-text">0/0 OS concluídas</span>
+                    </div>
+                    <div class="progress-bar-bg">
+                        <div class="progress-bar-fill" id="progress-bar" style="width:0%"></div>
+                    </div>
+                    <div style="margin-top:12px; font-size:13px; color:#475569;" id="proxima-parada">
+                        🔜 Carregando rota...
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-panel">
+                <h3>📋 Atendimentos do Dia (<span id="data-atual"></span>)</h3>
+                <table class="os-table">
+                    <thead>
+                        <tr>
+                            <th>Ordem</th>
+                            <th>OS</th>
+                            <th>Cliente</th>
+                            <th>Equipamento</th>
+                            <th>Cidade</th>
+                            <th>Previsão</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-os">
+                        <tr><td colspan="6" style="text-align:center;">Carregando dados da API...</td></tr>
+                    </tbody>
+                </table>
+                <div style="margin-top:16px; font-size:13px; color:#64748b; display:flex; gap:24px;">
+                    <span>⏱️ Início: 08:00</span>
+                    <span>🏁 Retorno previsto: <span id="retorno-previsto">--</span></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="weekly" class="tab-content">
+        <div class="chart-placeholder">
+            <h3 style="color:#0a3d62; margin-bottom:10px;">📆 Visão Semanal (07/04 - 11/04)</h3>
+            <div class="bar-chart">
+                <div class="bar-item"><div class="bar" style="height:120px;"></div><span class="bar-label">Seg</span><span>8 OS</span></div>
+                <div class="bar-item"><div class="bar" style="height:80px;"></div><span class="bar-label">Ter</span><span>5 OS</span></div>
+                <div class="bar-item"><div class="bar" style="height:150px;"></div><span class="bar-label">Qua</span><span>12 OS</span></div>
+                <div class="bar-item"><div class="bar" style="height:100px;"></div><span class="bar-label">Qui</span><span>7 OS</span></div>
+                <div class="bar-item"><div class="bar" style="height:60px;"></div><span class="bar-label">Sex</span><span>4 OS</span></div>
+            </div>
+            <p style="margin-top:20px;">Total da semana: 36 OS | Média diária: 7,2 OS (mock)</p>
+        </div>
+    </div>
+
+    <div id="monthly" class="tab-content">
+        <div class="chart-placeholder">
+            <h3 style="color:#0a3d62; margin-bottom:10px;">📊 Visão Mensal (Abril 2026)</h3>
+            <div class="bar-chart">
+                <div class="bar-item"><div class="bar" style="height:90px;"></div><span class="bar-label">Sem 1</span><span>28 OS</span></div>
+                <div class="bar-item"><div class="bar" style="height:130px;"></div><span class="bar-label">Sem 2</span><span>42 OS</span></div>
+                <div class="bar-item"><div class="bar" style="height:110px;"></div><span class="bar-label">Sem 3</span><span>35 OS</span></div>
+                <div class="bar-item"><div class="bar" style="height:70px;"></div><span class="bar-label">Sem 4</span><span>20 OS</span></div>
+            </div>
+            <p style="margin-top:20px;">Total do mês (projetado): 125 OS | SLA cumprido: 98,4% (mock)</p>
+        </div>
+    </div>
+
+    <div id="yearly" class="tab-content">
+        <div class="chart-placeholder">
+            <h3 style="color:#0a3d62; margin-bottom:10px;">📈 Visão Anual (2026)</h3>
+            <div class="bar-chart">
+                <div class="bar-item"><div class="bar" style="height:100px;"></div><span class="bar-label">Jan</span><span>110 OS</span></div>
+                <div class="bar-item"><div class="bar" style="height:120px;"></div><span class="bar-label">Fev</span><span>135 OS</span></div>
+                <div class="bar-item"><div class="bar" style="height:140px;"></div><span class="bar-label">Mar</span><span>158 OS</span></div>
+                <div class="bar-item"><div class="bar" style="height:130px;"></div><span class="bar-label">Abr</span><span>125 OS*</span></div>
+            </div>
+            <p style="margin-top:20px;">Total acumulado: 528 OS | Projeção anual: ~1500 OS (mock)</p>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    (function() {
+        // ---- Sistema de Abas ----
+        const tabs = document.querySelectorAll('.tab');
+        const contents = document.querySelectorAll('.tab-content');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const targetId = tab.getAttribute('data-tab');
+                tabs.forEach(t => t.classList.remove('active'));
+                contents.forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(targetId).classList.add('active');
+            });
+        });
+
+        // Data atual formatada
+        const hoje = new Date();
+        document.getElementById('data-atual').innerText = hoje.toLocaleDateString('pt-BR');
+
+        // ---- Payload com as 5 OSs padrão ----
+        const payload = {
+            "tecnico": {
+                "base_lat": -20.8117,
+                "base_lon": -49.3762,
+                "inicio_jornada": "08:00",
+                "fim_jornada": "18:00"
+            },
+            "ordens_servico": [
+                { "texto_bruto": "1893805 Concluído Nº Chamado: 1893805 Vencimento do SLA: 07/04/2026 11:19 Field, por gentileza mandar um técnico na unidade para substituir o equipamento 70203502038YV, pelo equipamento Backup Serial: 7020401203V7Z, o mesmo foi entregue na unidade na semana passada. --- Cliente: TJDOESTADODESÃOPAULO Equipamento: Multifuncional Monocromática A4 Nº Série: 70203502038YV IP: 10.97.230.45 Contrato: TJDOESTADODESÃOPAULO O.S. Cliente: 76988425 Criticidade: Alta Falha: Desabastecimento Parceiro: SONDA\nRUA EUGÊNIO ULIAN, 1265 - CENTRO, TABAPUA/SÃO PAULO - CEP: 15880023" },
+                { "texto_bruto": "1893603 Concluído Nº Chamado: 1893603 Vencimento do SLA: 02/04/2026 10:02 Impressão com manchas e borrados. Solicitamos suporte. ========================================= INSUMOS EM CONFORMIDADE: TONER 31% UNIDADE DE IMAGEM 16% KIT MANUTENÇÃO 34% --- Cliente: DF_OINFRA_CAIXA_7817_2023 9961 Equipamento: ITEM I (7817) - Multifuncional Monocromática Nº Série: 7020329101MG3 IP: 10.21.6.28 Contrato: DF_OINFRA_CAIXA_7817_2023 9961 O.S. Cliente: Criticidade: Alta Falha: Qualidade de Impressão Parceiro: SONDA\nRUA MINAS GERAIS, S/N - CENTRO, CATANDUVA/SÃO PAULO - CEP: 15801280" },
+                { "texto_bruto": "1874204 Concluído Nº Chamado: 1874204 Vencimento do SLA: 09/03/2026 16:00 À Equipe Field Services. Encaminho este chamado para atendimento presencial. O cliente solicita a configuração da gaveta 2 para papel A5. Embora o cliente tenha realizado o ajuste físico do marcador na gaveta, a alteração não é refletida no sistema para configuração remota. Há suspeita de falha no sensor físico da gaveta. Favor validar o hardware no local. Segue abaixo o status da impressora durante o acesso remoto: Equipamento Online: Sim; IP Atual: 10.226.93.210; Toner: 40%; Unidade de Imagem: 87%; Kit Manutenção: 21%; Favor encaminhar o técnico para verificar. --- Cliente: BANCO DO BRASIL_2019 4859 Equipamento: LEXMARK MX722ADHE Nº Série: 7464930022474 IP: 10.226.93.210 Contrato: BANCO DO BRASIL_2019 4859 O.S. Cliente: * Assunto : Criticidade: C1 Falha: Atolamento de Papel Parceiro: SONDA\nEndereço: Praça Nossa Senhora D'abadia, 446 - Centro, Icém - SP." },
+                { "texto_bruto": "1874176 Concluído Nº Chamado: 1874176 Vencimento do SLA: 05/03/2026 16:00 A IMPRESSORA TEM QUE SER CONFIGURADA DE FORMA CORRETA, JA ABRIMOS VARIOS CHAMADOS, MAS FUNCIONA UMA SEMANA E VOLTA A DAR PROBLEMA. A IMPRESSAO SAI COM UMA LISTA NO MEIO LINHA. Dados do Usuário --- Cliente: DF_OINFRA_CAIXA_7817_2023 9961 Equipamento: 255228 Nº Série: 460231610104C IP: 10.20.128.252 Contrato: DF_OINFRA_CAIXA_7817_2023 9961 O.S. Cliente: * Assunto : Criticidade: Alta Falha: Qualidade de Impressão Parceiro: SONDA\nRua Quinze de Novembro, 1050, no Centro (CEP 15830-000). PINDORAMA/SP" },
+                { "texto_bruto": "1874177 Concluído Nº Chamado: 1874177 Vencimento do SLA: 05/03/2026 16:00 A IMPRESSORA TEM QUE SER CONFIGURADA DE FORMA CORRETA, JA ABRIMOS VARIOS CHAMADOS, MAS FUNCIONA UMA SEMANA E VOLTA A DAR PROBLEMA. A IMPRESSAO SAI COM UMA LISTA NO MEIO LINHA Dados do Usuário * E-mail : C089483@corp.caixa.gov.br * Nome : ALESSANDRA REGINA DA SILVA * DDD : 17 * Telefone : 40031043 --- Cliente: DF_OINFRA_CAIXA_7817_2023 9961 Equipamento: 255205 Nº Série: 7020329101MFT IP: 10.17.124.140 Contrato: DF_OINFRA_CAIXA_7817_2023 9961 O.S. Cliente: * Assunto : Criticidade: Alta Falha: Não Imprime Parceiro: SONDA\nRua Quinze de Novembro, 1050, no Centro (CEP 15830-000) PINDORAMA/SP" }
+            ],
+            "modo_veiculo": "moto"
+        };
+
+        const API_URL = 'https://motor-opt.onrender.com/v1/optimize';
+
+        // Inicializa o mapa
+        const map = L.map('mini-map').setView([-20.8117, -49.3762], 8);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; CartoDB'
+        }).addTo(map);
+
+        // Função principal
+        async function carregarRota() {
+            try {
+                document.getElementById('status-text').innerText = 'Otimizando rota...';
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) throw new Error('Erro na API');
+                const data = await response.json();
+                
+                // Atualiza status
+                document.getElementById('status-text').innerHTML = `<span class="live-dot"></span> Rota otimizada · ${data.rota_ordenada.length} OSs`;
+                
+                // Atualiza cards
+                document.getElementById('total-os').innerHTML = `${data.rota_ordenada.length}<span class="summary-unit">OS</span>`;
+                document.getElementById('os-breakdown').innerText = `${data.rota_ordenada.length} processadas`;
+                document.getElementById('distancia-total').innerHTML = `${data.distancia_total_km.toFixed(0)}<span class="summary-unit">km</span>`;
+                const tempoTotalMin = data.tempo_total_viagem_min + data.tempo_total_execucao_min;
+                const horas = Math.floor(tempoTotalMin / 60);
+                const minutos = tempoTotalMin % 60;
+                document.getElementById('tempo-total').innerHTML = `${horas}h ${minutos}<span class="summary-unit">min</span>`;
+                document.getElementById('horario-retorno').innerHTML = data.horario_previsto_retorno_base;
+                document.getElementById('retorno-previsto').innerText = data.horario_previsto_retorno_base;
+                
+                // Preenche tabela
+                const tbody = document.getElementById('tabela-os');
+                tbody.innerHTML = '';
+                data.rota_ordenada.forEach((item, idx) => {
+                    const row = tbody.insertRow();
+                    row.innerHTML = `
+                        <td>${item.ordem}</td>
+                        <td>${item.id_os}</td>
+                        <td>${item.cliente.split(' ').slice(0,2).join(' ')} </td>
+                        <td>${item.equipamento || '--'}</td>
+                        <td>${item.cidade}</td>
+                        <td>${item.horario_chegada_previsto || '--:--'}</td>
+                        <td><span class="status pending">Pendente</span></td>
+                    `;
+                });
+                
+                // Atualiza progresso (mock: 0% concluído)
+                document.getElementById('progress-text').innerText = `0/${data.rota_ordenada.length} OS concluídas`;
+                document.getElementById('progress-bar').style.width = '0%';
+                document.getElementById('proxima-parada').innerHTML = `🔜 Próxima parada: <strong>${data.rota_ordenada[0]?.cidade || '--'}</strong> · Previsão: ${data.rota_ordenada[0]?.horario_chegada_previsto || '--'}`;
+                
+                // ---- Desenha o mapa com coordenadas mockadas (já que a API ainda não retorna lat/lon) ----
+                // Usamos um mapeamento fixo das cidades
+                const cityCoords = {
+                    'TABAPUÃ': [-20.9601, -49.0302],
+                    'CATANDUVA': [-21.1314, -48.9773],
+                    'ICÉM': [-20.3361, -49.1986],
+                    'PINDORAMA': [-21.1883, -48.9089],
+                    'SÃO JOSÉ DO RIO PRETO': [-20.8117, -49.3762]
+                };
+                const pontos = [];
+                const base = [-20.8117, -49.3762];
+                pontos.push(base);
+                data.rota_ordenada.forEach(item => {
+                    const cidade = item.cidade.toUpperCase();
+                    const coord = cityCoords[cidade] || cityCoords['SÃO JOSÉ DO RIO PRETO'];
+                    pontos.push(coord);
+                });
+                pontos.push(base); // retorno
+                
+                // Limpa mapa e desenha
+                map.eachLayer(layer => { if (layer instanceof L.TileLayer) return; map.removeLayer(layer); });
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
+                L.polyline(pontos, { color: '#0a3d62', weight: 4 }).addTo(map);
+                pontos.forEach((p, i) => {
+                    if (i === 0 || i === pontos.length-1) {
+                        L.marker(p, { icon: L.divIcon({ html: '<div style="background:#64748b; color:white; border-radius:20px; padding:2px 8px;">Base</div>' }) }).addTo(map);
+                    } else {
+                        L.marker(p, { icon: L.divIcon({ html: `<div style="background:#0a3d62; color:white; border-radius:50%; width:24px; height:24px; display:flex; align-items:center; justify-content:center;">${i}</div>` }) }).addTo(map);
+                    }
+                });
+                map.fitBounds(L.polyline(pontos).getBounds(), { padding: [20,20] });
+                
+            } catch (error) {
+                console.error(error);
+                document.getElementById('status-text').innerText = 'Erro ao conectar à API';
+                document.getElementById('tabela-os').innerHTML = '<tr><td colspan="6" style="text-align:center; color:red;">Falha ao carregar rota. Verifique se a API está rodando.</td></tr>';
+            }
+        }
+
+        carregarRota();
+    })();
+</script>
+</body>
+</html>
