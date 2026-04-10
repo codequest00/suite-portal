@@ -3,446 +3,166 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SuiteService | Painel do Gestor - Rastreamento em Tempo Real</title>
-    
-    <!-- Fonte Inter -->
+    <title>SuiteService | Portal de Acompanhamento (Estruturado)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
-    
-    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f4f7fc;
-            color: #1e293b;
-            line-height: 1.5;
-            padding: 20px;
-        }
-
-        .dashboard {
-            max-width: 1600px;
-            margin: 0 auto;
-        }
-
-        /* Cabeçalho */
-        .header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 24px;
-            flex-wrap: wrap;
-            gap: 16px;
-        }
-
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .logo {
-            background-color: #0a3d62;
-            color: white;
-            font-weight: 700;
-            font-size: 22px;
-            padding: 8px 16px;
-            border-radius: 40px;
-            letter-spacing: -0.5px;
-            box-shadow: 0 4px 8px rgba(10, 61, 98, 0.1);
-        }
-
-        .header h1 {
-            font-weight: 600;
-            font-size: 26px;
-            color: #0a3d62;
-        }
-
-        .status-badge {
-            background: #e8f0fe;
-            color: #0a3d62;
-            padding: 8px 20px;
-            border-radius: 40px;
-            font-weight: 500;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .live-dot {
-            width: 10px;
-            height: 10px;
-            background-color: #10b981;
-            border-radius: 50%;
-            display: inline-block;
-            animation: pulse 1.5s infinite;
-        }
-
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.4; }
-            100% { opacity: 1; }
-        }
-
-        /* Cards de resumo */
-        .summary-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
-            margin-bottom: 28px;
-        }
-
-        .summary-card {
-            background: white;
-            padding: 20px;
-            border-radius: 20px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.02);
-            border: 1px solid #e9eef3;
-        }
-
-        .summary-label {
-            font-size: 14px;
-            font-weight: 500;
-            color: #64748b;
-            margin-bottom: 8px;
-        }
-
-        .summary-value {
-            font-size: 36px;
-            font-weight: 700;
-            color: #0a3d62;
-            line-height: 1.2;
-        }
-
-        /* Seção principal: Mapa + Tabela */
-        .tracking-section {
-            display: grid;
-            grid-template-columns: 1.5fr 1fr;
-            gap: 24px;
-        }
-
-        .map-panel {
-            background: white;
-            border-radius: 24px;
-            padding: 16px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.02);
-            border: 1px solid #e9eef3;
-        }
-
-        .map-panel h3 {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 12px;
-            color: #0a3d62;
-        }
-
-        #map {
-            height: 450px;
-            width: 100%;
-            border-radius: 16px;
-            background: #d4e2f0;
-            z-index: 1;
-        }
-
-        .table-panel {
-            background: white;
-            border-radius: 24px;
-            padding: 20px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.02);
-            border: 1px solid #e9eef3;
-            overflow-x: auto;
-        }
-
-        .table-panel h3 {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 16px;
-            color: #0a3d62;
-        }
-
-        .tecnicos-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 14px;
-        }
-
-        .tecnicos-table th {
-            text-align: left;
-            padding: 12px 8px;
-            color: #64748b;
-            font-weight: 500;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        .tecnicos-table td {
-            padding: 14px 8px;
-            border-bottom: 1px solid #edf2f7;
-        }
-
-        .status-badge-table {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 40px;
-            font-size: 12px;
-            font-weight: 500;
-        }
-
-        .status-livre {
-            background: #d1fae5;
-            color: #065f46;
-        }
-
-        .status-caminho {
-            background: #fef3c7;
-            color: #92400e;
-        }
-
-        .status-atendimento {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-
-        .footer-note {
-            margin-top: 20px;
-            text-align: right;
-            color: #64748b;
-            font-size: 13px;
-        }
-
-        .refresh-btn {
-            background: #0a3d62;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 40px;
-            cursor: pointer;
-            font-weight: 500;
-            font-size: 13px;
-            margin-left: 10px;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background-color: #f4f7fc; color: #1e293b; line-height: 1.5; padding: 24px; }
+        .portal-container { max-width: 1600px; margin: 0 auto; }
+        .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; flex-wrap: wrap; gap: 16px; }
+        .header-left { display: flex; align-items: center; gap: 12px; }
+        .logo { background-color: #0a3d62; color: white; font-weight: 700; font-size: 22px; padding: 8px 16px; border-radius: 40px; letter-spacing: -0.5px; box-shadow: 0 4px 8px rgba(10,61,98,0.1); }
+        .header h1 { font-weight: 600; font-size: 26px; color: #0a3d62; }
+        .status-badge { background: #e8f0fe; color: #0a3d62; padding: 8px 20px; border-radius: 40px; font-weight: 500; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+        .live-dot { width: 10px; height: 10px; background-color: #10b981; border-radius: 50%; display: inline-block; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+        .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 28px; }
+        .summary-card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.02); border: 1px solid #e9eef3; }
+        .summary-label { font-size: 14px; font-weight: 500; color: #64748b; margin-bottom: 8px; }
+        .summary-value { font-size: 36px; font-weight: 700; color: #0a3d62; line-height: 1.2; }
+        .summary-unit { font-size: 16px; font-weight: 400; color: #64748b; margin-left: 4px; }
+        .tracking-section { display: grid; grid-template-columns: 1fr 1.2fr; gap: 24px; margin-bottom: 24px; }
+        .map-panel { background: white; border-radius: 24px; padding: 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.02); border: 1px solid #e9eef3; }
+        .map-panel h3 { font-size: 16px; font-weight: 600; margin-bottom: 12px; color: #0a3d62; }
+        #mini-map { height: 260px; width: 100%; border-radius: 16px; background: #d4e2f0; z-index: 1; }
+        .trip-progress { margin-top: 16px; padding-top: 12px; border-top: 1px solid #edf2f7; }
+        .progress-label { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 6px; }
+        .progress-bar-bg { background: #e2e8f0; height: 8px; border-radius: 20px; overflow: hidden; }
+        .progress-bar-fill { background: #0a3d62; height: 100%; border-radius: 20px; width: 0%; }
+        .table-panel { background: white; border-radius: 24px; padding: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.02); border: 1px solid #e9eef3; overflow-x: auto; }
+        .table-panel h3 { font-size: 16px; font-weight: 600; margin-bottom: 16px; color: #0a3d62; }
+        .os-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .os-table th { text-align: left; padding: 12px 8px; color: #64748b; font-weight: 500; border-bottom: 1px solid #e2e8f0; }
+        .os-table td { padding: 14px 8px; border-bottom: 1px solid #edf2f7; }
+        .status { display: inline-block; padding: 4px 10px; border-radius: 40px; font-size: 12px; font-weight: 500; }
+        .status.pending { background: #e0f2fe; color: #0369a1; }
         @media (max-width: 1000px) {
-            .tracking-section {
-                grid-template-columns: 1fr;
-            }
-            .summary-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
+            .tracking-section { grid-template-columns: 1fr; }
+            .summary-grid { grid-template-columns: repeat(2, 1fr); }
         }
     </style>
 </head>
 <body>
-
-<div class="dashboard">
-    <!-- Cabeçalho -->
+<div class="portal-container">
     <div class="header">
         <div class="header-left">
             <div class="logo">SuiteService</div>
-            <h1>Painel do Gestor · Rastreamento em Tempo Real</h1>
+            <h1>Portal de Acompanhamento · Dados Estruturados</h1>
         </div>
         <div class="status-badge">
             <span class="live-dot"></span>
-            <span id="update-time">Atualizado agora</span>
-            <button class="refresh-btn" onclick="carregarDados()">🔄 Atualizar</button>
+            <span id="status-text">Conectando à API...</span>
         </div>
     </div>
-
-    <!-- Cards de resumo -->
     <div class="summary-grid">
         <div class="summary-card">
-            <div class="summary-label">Técnicos Ativos</div>
-            <div class="summary-value" id="total-ativos">--</div>
+            <div class="summary-label">Total de OS Hoje</div>
+            <div class="summary-value" id="total-os">--</div>
         </div>
         <div class="summary-card">
-            <div class="summary-label">Em Deslocamento</div>
-            <div class="summary-value" id="total-caminho">--</div>
+            <div class="summary-label">Distância Total</div>
+            <div class="summary-value" id="distancia-total">--</div>
         </div>
         <div class="summary-card">
-            <div class="summary-label">Em Atendimento</div>
-            <div class="summary-value" id="total-atendimento">--</div>
+            <div class="summary-label">Tempo Total</div>
+            <div class="summary-value" id="tempo-total">--</div>
         </div>
         <div class="summary-card">
-            <div class="summary-label">Livres</div>
-            <div class="summary-value" id="total-livres">--</div>
+            <div class="summary-label">Previsão de Retorno</div>
+            <div class="summary-value" id="horario-retorno">--</div>
         </div>
     </div>
-
-    <!-- Mapa + Tabela -->
     <div class="tracking-section">
         <div class="map-panel">
-            <h3>📍 Localização dos Técnicos</h3>
-            <div id="map"></div>
+            <h3>📍 Rota do Dia (Otimizada)</h3>
+            <div id="mini-map"></div>
+            <div class="trip-progress">
+                <div class="progress-label">
+                    <span>Progresso da rota</span>
+                    <span id="progress-text">0/0 OS</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="progress-bar" style="width:0%"></div>
+                </div>
+            </div>
         </div>
         <div class="table-panel">
-            <h3>📋 Status Detalhado</h3>
-            <table class="tecnicos-table">
+            <h3>📋 Atendimentos do Dia</h3>
+            <table class="os-table">
                 <thead>
-                    <tr>
-                        <th>Técnico</th>
-                        <th>OS Atual</th>
-                        <th>Status</th>
-                        <th>Última Atualização</th>
-                    </tr>
+                    <tr><th>Ordem</th><th>OS</th><th>Cliente</th><th>Cidade</th><th>Previsão</th><th>Status</th></tr>
                 </thead>
-                <tbody id="tabela-tecnicos">
-                    <tr><td colspan="4" style="text-align:center;">Carregando dados...</td></tr>
-                </tbody>
+                <tbody id="tabela-os"><tr><td colspan="6" style="text-align:center;">Carregando...</td></tr></tbody>
             </table>
-            <div class="footer-note">
-                Atualização automática a cada 30s
-            </div>
         </div>
     </div>
 </div>
-
-<!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
 <script>
-    // Configuração
-    const API_URL = 'https://motor-opt.onrender.com/v1/rastreamento/status';
-    let map;
-    let markersLayer;
+    const API_URL = 'https://motor-opt.onrender.com/v1/optimize/estruturado';
+    const payload = {
+        tecnico: { base_lat: -20.8117, base_lon: -49.3762, inicio_jornada: "08:00", fim_jornada: "18:00" },
+        ordens_servico: [
+            { id_os: "1893805", cliente: "TJDOESTADODESÃOPAULO", endereco: "RUA EUGÊNIO ULIAN, 1265 - CENTRO", cidade: "TABAPUÃ", uf: "SP", cep: "15880023", urgencia: 5, problema: "Desabastecimento", equipamento: "Multifuncional Monocromática A4", tempo_estimado_min: 45 },
+            { id_os: "1893603", cliente: "DF_OINFRA_CAIXA_7817_2023 9961", endereco: "RUA MINAS GERAIS, S/N - CENTRO", cidade: "CATANDUVA", uf: "SP", cep: "15801280", urgencia: 5, problema: "Qualidade de Impressão", equipamento: "ITEM I (7817) - Multifuncional Monocromática", tempo_estimado_min: 30 },
+            { id_os: "1874204", cliente: "BANCO DO BRASIL_2019 4859", endereco: "Praça Nossa Senhora D'abadia, 446 - Centro", cidade: "ICÉM", uf: "SP", cep: "", urgencia: 5, problema: "Atolamento de Papel", equipamento: "LEXMARK MX722ADHE", tempo_estimado_min: 60 },
+            { id_os: "1874176", cliente: "DF_OINFRA_CAIXA_7817_2023 9961", endereco: "Rua Quinze de Novembro, 1050, no Centro", cidade: "PINDORAMA", uf: "SP", cep: "15830000", urgencia: 5, problema: "Qualidade de Impressão", equipamento: "255228", tempo_estimado_min: 40 },
+            { id_os: "1874177", cliente: "DF_OINFRA_CAIXA_7817_2023 9961", endereco: "Rua Quinze de Novembro, 1050, no Centro", cidade: "PINDORAMA", uf: "SP", cep: "15830000", urgencia: 5, problema: "Não Imprime", equipamento: "255205", tempo_estimado_min: 40 }
+        ],
+        modo_veiculo: "moto"
+    };
 
-    // Inicializar mapa
-    function initMap() {
-        map = L.map('map').setView([-22.0, -48.0], 7); // Centro aproximado de SP
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; CartoDB'
-        }).addTo(map);
-        markersLayer = L.layerGroup().addTo(map);
-    }
+    const map = L.map('mini-map').setView([-20.8117, -49.3762], 8);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; CartoDB' }).addTo(map);
 
-    // Formata timestamp
-    function formatTime(timestamp) {
-        if (!timestamp) return '--';
-        const date = new Date(timestamp.replace(' ', 'T') + 'Z'); // Ajuste para UTC
-        return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-    }
-
-    // Define cor do marcador e status
-    function getStatusInfo(tecnico) {
-        if (!tecnico.status) {
-            return { color: '#10b981', label: 'Livre', class: 'status-livre' };
-        }
-        if (tecnico.status === 'a_caminho') {
-            return { color: '#f59e0b', label: 'A caminho', class: 'status-caminho' };
-        }
-        if (tecnico.status === 'em_atendimento') {
-            return { color: '#ef4444', label: 'Em atendimento', class: 'status-atendimento' };
-        }
-        return { color: '#64748b', label: 'Desconhecido', class: '' };
-    }
-
-    // Atualiza painel
-    async function carregarDados() {
-        const statusEl = document.getElementById('update-time');
-        statusEl.innerHTML = '🔄 Atualizando...';
-        
+    async function carregarRota() {
+        const statusEl = document.getElementById('status-text');
         try {
-            const response = await fetch(API_URL);
+            statusEl.innerHTML = '<span class="live-dot"></span> Acordando servidor... (pode levar 30s)';
+            const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
             if (!response.ok) throw new Error('Erro na API');
             const data = await response.json();
-            
-            const tecnicos = data.tecnicos;
-            
-            // Atualizar cards
-            const total = tecnicos.length;
-            const caminho = tecnicos.filter(t => t.status === 'a_caminho').length;
-            const atendimento = tecnicos.filter(t => t.status === 'em_atendimento').length;
-            const livres = tecnicos.filter(t => !t.status).length;
-            
-            document.getElementById('total-ativos').innerText = total;
-            document.getElementById('total-caminho').innerText = caminho;
-            document.getElementById('total-atendimento').innerText = atendimento;
-            document.getElementById('total-livres').innerText = livres;
-            
-            // Atualizar tabela
-            const tbody = document.getElementById('tabela-tecnicos');
+            statusEl.innerHTML = '<span class="live-dot"></span> Rota otimizada · ' + data.rota_ordenada.length + ' OSs';
+
+            document.getElementById('total-os').innerHTML = data.rota_ordenada.length + '<span class="summary-unit">OS</span>';
+            document.getElementById('distancia-total').innerHTML = data.distancia_total_km.toFixed(0) + '<span class="summary-unit">km</span>';
+            const totalMin = data.tempo_total_viagem_min + data.tempo_total_execucao_min;
+            document.getElementById('tempo-total').innerHTML = Math.floor(totalMin/60) + 'h ' + (totalMin%60) + '<span class="summary-unit">min</span>';
+            document.getElementById('horario-retorno').innerHTML = data.horario_previsto_retorno_base;
+
+            const tbody = document.getElementById('tabela-os');
             tbody.innerHTML = '';
-            
-            // Limpar marcadores antigos
-            markersLayer.clearLayers();
-            
-            // Adicionar cada técnico
-            tecnicos.forEach(tec => {
-                // Linha da tabela
+            data.rota_ordenada.forEach(item => {
                 const row = tbody.insertRow();
-                const statusInfo = getStatusInfo(tec);
-                const osInfo = tec.id_os ? `OS ${tec.id_os}` : '--';
-                const ultimaAtt = tec.ultima_atualizacao ? formatTime(tec.ultima_atualizacao) : '--';
-                
-                row.innerHTML = `
-                    <td><strong>${tec.nome}</strong><br><small style="color:#64748b;">ID: ${tec.id}</small></td>
-                    <td>${osInfo}</td>
-                    <td><span class="status-badge-table ${statusInfo.class}">${statusInfo.label}</span></td>
-                    <td>${ultimaAtt}</td>
-                `;
-                
-                // Adicionar marcador no mapa se houver coordenadas
-                let lat, lon;
-                if (tec.ultima_lat && tec.ultima_lon) {
-                    lat = tec.ultima_lat;
-                    lon = tec.ultima_lon;
-                } else if (tec.base_lat && tec.base_lon) {
-                    lat = tec.base_lat;
-                    lon = tec.base_lon;
-                } else {
-                    return; // sem coordenadas
-                }
-                
-                const marker = L.marker([lat, lon], {
-                    icon: L.divIcon({
-                        className: 'custom-marker',
-                        html: `<div style="background-color: ${statusInfo.color}; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.2);"></div>`,
-                        iconSize: [22, 22],
-                        popupAnchor: [0, -11]
-                    })
-                }).addTo(markersLayer);
-                
-                // Popup com informações
-                marker.bindPopup(`
-                    <b>${tec.nome}</b><br>
-                    Status: ${statusInfo.label}<br>
-                    ${tec.id_os ? 'OS: ' + tec.id_os : 'Sem OS atribuída'}<br>
-                    Última atualização: ${ultimaAtt}
-                `);
+                row.innerHTML = `<td>${item.ordem}</td><td>${item.id_os}</td><td>${item.cliente}</td><td>${item.cidade}</td><td>${item.horario_chegada_previsto}</td><td><span class="status pending">Pendente</span></td>`;
             });
-            
-            // Ajustar zoom para mostrar todos os marcadores, se houver
-            if (markersLayer.getLayers().length > 0) {
-                const group = L.featureGroup(markersLayer.getLayers());
-                map.fitBounds(group.getBounds(), { padding: [30, 30] });
-            }
-            
-            // Atualizar timestamp
-            const agora = new Date();
-            document.getElementById('update-time').innerHTML = `<span class="live-dot"></span> Atualizado ${agora.toLocaleTimeString('pt-BR')}`;
-            
-        } catch (error) {
-            console.error(error);
-            document.getElementById('update-time').innerText = '❌ Erro ao carregar';
-            document.getElementById('tabela-tecnicos').innerHTML = '<tr><td colspan="4" style="color:red; text-align:center;">Falha na conexão com a API.</td></tr>';
+
+            document.getElementById('progress-text').innerText = `0/${data.rota_ordenada.length} OS`;
+            document.getElementById('progress-bar').style.width = '0%';
+
+            // Mapa (coordenadas fixas para demonstração)
+            const coords = { 'CATANDUVA': [-21.1314,-48.9773], 'ICÉM': [-20.3361,-49.1986], 'PINDORAMA': [-21.1883,-48.9089], 'TABAPUÃ': [-20.9601,-49.0302] };
+            const pontos = [[-20.8117,-49.3762]];
+            data.rota_ordenada.forEach(item => { const c = coords[item.cidade] || [-20.8117,-49.3762]; pontos.push(c); });
+            pontos.push([-20.8117,-49.3762]);
+            map.eachLayer(l => { if (l instanceof L.TileLayer) return; map.removeLayer(l); });
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
+            L.polyline(pontos, { color: '#0a3d62', weight: 4 }).addTo(map);
+            pontos.forEach((p, i) => {
+                if (i===0 || i===pontos.length-1) L.marker(p, { icon: L.divIcon({ html: '<div style="background:#64748b;color:#fff;border-radius:20px;padding:2px 8px;">Base</div>' }) }).addTo(map);
+                else L.marker(p, { icon: L.divIcon({ html: `<div style="background:#0a3d62;color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;">${i}</div>` }) }).addTo(map);
+            });
+            map.fitBounds(L.polyline(pontos).getBounds(), { padding: [20,20] });
+        } catch (e) {
+            console.error(e);
+            statusEl.innerText = '❌ Erro na conexão.';
+            document.getElementById('tabela-os').innerHTML = '<tr><td colspan="6" style="color:red;">Falha ao carregar rota.</td></tr>';
         }
     }
-
-    // Inicialização
-    window.onload = () => {
-        initMap();
-        carregarDados();
-        // Atualizar a cada 30 segundos
-        setInterval(carregarDados, 30000);
-    };
+    carregarRota();
 </script>
-
 </body>
 </html>
